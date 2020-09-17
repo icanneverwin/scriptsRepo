@@ -8,7 +8,7 @@ currentMonth = datetime.now().month
 currentYear = datetime.now().year
 
 currentFolder = str(currentYear) + '_' + str(currentMonth).rjust(2, '0')
-print(currentFolder)
+#print(currentFolder)
 
 
 dest_dir = 'E:/Forex/bulletin_extracts'
@@ -26,7 +26,7 @@ def check_file(filename: str, directory: str) -> bool:
         return False
 
 def get_folder_name(filename: str) -> str:
-    """[summary]
+    """extracts name of folder in which provided file should be stored locally
 
     Args:
         filename (str): name of the input file (expected bulletin archive)
@@ -41,7 +41,14 @@ def get_folder_name(filename: str) -> str:
         return 'None'
 
 def get_files_for_upload(filelist: list) -> list:
+    """Function for diff identification between local and remote files
 
+    Args:
+        filelist (list): list of filenames extracted from remote FTP
+
+    Returns:
+        list: list of filenames to be uploaded
+    """
     upload_files = list()
     for filename in filelist:
         file_path = dest_dir + '/' + get_folder_name(filename)
@@ -53,16 +60,19 @@ def get_files_for_upload(filelist: list) -> list:
             upload_files.append(filename)
     
     return upload_files
-
+  
 
 def onetime_file_structure(directory: str):
+    """One-time function to generate directory/file structure for future usage. It performs:
+        1. go through all files in the folder
+        2. for each file identify creation date (using re)
+        3. based on parsed date create folder YYYY_MM if not exists
+        4. put the file into related folder
+        
+    Args:
+        directory (str): root folder path for bulletin files
     """
-    1. go through all files in the folder
-    2. for each identify creation date (using re)
-    3. based on parsed date create folder YYYY_MM if not exists
-    4. put the file into related folder
-    """
-  
+
     for filename in os.listdir(directory):
         current_path = directory + '/' + filename
         print(f'current_path = {current_path}')
@@ -83,35 +93,45 @@ def onetime_file_structure(directory: str):
             print(f'could not match pattern to identify folder name, file {filename}')
 
 
-def ftp_upload(server: str, directory='', interval=50):
-    
+def ftp_upload(server: str, directory=''):
+    """function for uploading bulletin files from remote destionation. It performs:
+        1. connection to FTP URL
+        2. validation on local destination directory
+        3. check on files to be uploaded - will skip uploading for already existing files
+        4. create subfolder based on file timestamp
+        5. upload file to the destination folder
+
+    Args:
+        server (str): url from which data will be uploaded
+        directory (str, optional): Remote directory where files are stored. Defaults to ''.
+    """
     #ftp class set up
-    ftp = FTP(server)
-    ftp.login()
-    ftp.cwd(directory)
-    ftp_filenames = ftp.nlst()
 
-    #check if main directory exist
-    if not check_dir(dest_dir):
-        os.mkdir(directory)
+    with FTP(server) as ftp:
+        ftp.login()
 
-    upld_files = get_files_for_upload(ftp_filenames)
+        print(ftp.getwelcome())
+        ftp.cwd(directory)
+        ftp_filenames = ftp.nlst()
 
-    for file in upld_files:
-        temp_dir_name = get_folder_name(file)
-        abs_dir_name = dest_dir + '/' + temp_dir_name
-        if not check_dir(abs_dir_name):
-            print(f"directory {abs_dir_name} does not exist. Creating...")
-            os.mkdir(abs_dir_name)
+        #check if main directory exist
+        if not check_dir(dest_dir):
+            os.mkdir(directory)
+
+        upld_files = get_files_for_upload(ftp_filenames)
+
+        for file in upld_files:
+            temp_dir_name = get_folder_name(file)
+            abs_dir_name = dest_dir + '/' + temp_dir_name
+            if not check_dir(abs_dir_name):
+                print(f"directory {abs_dir_name} does not exist. Creating...")
+                os.mkdir(abs_dir_name)
         
-        print(f'Downloading {file} ...')
-        newfile = open(abs_dir_name + '/' + file, 'wb')
-        ftp.retrbinary('RETR ' + file, newfile.write)
-        newfile.close()
+            print(f'Downloading {file} ...')
+            with open(abs_dir_name + '/' + file, 'wb') as newfile:
+                ftp.retrbinary('RETR ' + file, newfile.write)
     
-    ftp.close()
   
-
 if __name__ == "__main__":
     ftp_upload("ftp.cmegroup.com", directory = 'bulletin')
 
