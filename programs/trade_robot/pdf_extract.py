@@ -31,23 +31,56 @@ df.columns = [  'Date',
                 'OpenInterestChange',
                 'Contract' #ContractHigh, ContractLow
             ]
-
-
-#df.info()
-#df.dtypes
-
-df = df.fillna('')
-
 #df['Unnamed4'] = df['Unnamed4'].fillna('')
 df['SettPrice'] = df['Unnamed2'].astype(str) + df['Unnamed3'].astype(str) + df['Unnamed4'].astype(str) + ' ' + df['Unnamed5'].astype(str)
 
+# overall info
+#df.info()
+#df.dtypes
+#df.describe()
+
+df = df.fillna('')
+
 #TODO: remove unused lines
+
+# read headers
+df.columns
+cols = df.columns.values # get list of column names
+
+# read each column
+print(df['SettPrice'])
+print(df[['SettPrice', 'GlobexLow', 'GlobexVolume']])
+
+# read each row
+print(df.iloc[1])
+print(df.iloc[1:4])
+
+# read a specific location
+print(df.iloc[2,1])
+
+#for index, row in df.iterrows():
+#    print(index, row)
+
+# show top/tail 5
+
+df.head(5)
+df.tail(5)
+
+# df = df.drop(columns=['Unnamed2']) # drop columns
+
+#df['Total'] = df.iloc[:, 4:19].sum(axis=1) # new total = sum(4:9) - for each row
+
+#df = df.reset_index() # reset index
 
 #pd.set_option('display.max_rows', len(df))
 #print(df)
 #pd.reset_option('display.max_rows')
 
 #print(df.iloc[60])
+
+# find cells that contain the value:
+
+df.loc[df['Date'].str.contains('TOTAL')]
 
 print(df.loc[df['Date'] == 'TOTAL  SWISS FRNC FUT'])
 
